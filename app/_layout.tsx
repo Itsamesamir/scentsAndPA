@@ -1,39 +1,38 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/useColorScheme';
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+import React, { useEffect } from 'react';
+import { View, ActivityIndicator } from 'react-native';
+import { useRouter, Slot } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
+  const router = useRouter();
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
+    const checkAuth = async () => {
+      try {
+        const token = await AsyncStorage.getItem('user_token'); // Check for user authentication token
+     
+        if (!token) {
+          // Delay navigation until after mounting
+          setTimeout(() => {
+            router.replace('/(auth)/login'); // Redirect to login if no token
+            }, 0);
+        }
+        
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+        setTimeout(() => {
+          router.replace('/(auth)/login'); // Redirect to home on error
+        }, 0);
+      }
+    };
 
-  if (!loaded) {
-    return null;
-  }
+    checkAuth();
+  }, []);
 
+  // Always render the Slot component for expo-router to function correctly
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <View style={{ flex: 1 }}>
+      <Slot />
+    </View>
   );
 }
