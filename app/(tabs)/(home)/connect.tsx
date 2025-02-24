@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
@@ -11,20 +11,21 @@ import {
 } from "react-native";
 import { BleManager, Device } from "react-native-ble-plx";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { BleContext } from "../../utilities/BleContext";
 
 const manager = new BleManager();
 
 export default function ConnectDevicesScreen() {
   const [isScanning, setIsScanning] = useState(false);
   const [availableDevices, setAvailableDevices] = useState<Device[]>([]);
-  const [connectedDevices, setConnectedDevices] = useState<Device[]>([]);
+  const { bleManager, connectedDevices, setConnectedDevices } = useContext(BleContext);
 
   useEffect(() => {
     return () => {
       manager.stopDeviceScan();
-      manager.destroy();
+     
     };
-  }, []);
+  }, [bleManager]);
 
   useEffect(() => {
     const loadConnectedDevices = async () => {
@@ -131,9 +132,9 @@ export default function ConnectDevicesScreen() {
       }
 
 
-      setConnectedDevices((prev) => {
+      setConnectedDevices((prev: Device[]) => {
         const updatedDevices = [...prev, connectedDevice];
-        AsyncStorage.setItem("connectedDevices", JSON.stringify(updatedDevices));
+        AsyncStorage.setItem("connectedDevices", JSON.stringify(updatedDevices.map(d => ({ id: d.id, name: d.name }))));
         return updatedDevices;
       });
 
@@ -150,7 +151,7 @@ export default function ConnectDevicesScreen() {
       
 
       // Get currently connected devices by their IDs
-      const connected = await manager.devices(connectedDevices.map(d => d.id));
+      const connected: Device[] = await manager.devices(connectedDevices.map((d: Device) => d.id));
       
 
       // Find the device in the connected list
@@ -164,15 +165,15 @@ export default function ConnectDevicesScreen() {
       console.log("Disconnected from:", targetDevice.id);
 
       // Remove from connected devices list
-      setConnectedDevices((prevDevices) =>
-        prevDevices.filter((d) => d.id !== targetDevice.id)
+      setConnectedDevices((prevDevices: Device[]) =>
+        prevDevices.filter((d: Device) => d.id !== targetDevice.id)
       );
 
       // Update AsyncStorage
       const storedDevices = await AsyncStorage.getItem("connectedDevices");
       if (storedDevices) {
         const parsedDevices = JSON.parse(storedDevices);
-        const updatedDevices = parsedDevices.filter((d) => d.id !== targetDevice.id);
+        const updatedDevices = parsedDevices.filter((d: { id: string }) => d.id !== targetDevice.id);
         await AsyncStorage.setItem("connectedDevices", JSON.stringify(updatedDevices));
       }
 

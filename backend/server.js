@@ -25,6 +25,8 @@ const UserSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true }, // Store hashed passwords
+    HR: { type: Number, required: true },
+    pressure: { type: Number, required: true },
 });
 
 const User = mongoose.model('User', UserSchema);
@@ -68,7 +70,9 @@ app.post('/register', async (req, res) => {
     try {
         const { name, email, password } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = new User({ name, email, password: hashedPassword });
+        const HR = 0;
+        const pressure = 0;
+        const newUser = new User({ name, email, password: hashedPassword, HR, pressure });
         await newUser.save();
         res.status(201).json({ message: 'User registered successfully' });
     } catch (err) {
@@ -98,21 +102,48 @@ app.post('/login', async (req, res) => {
     }
 });
 
-// Protected Route Example
-app.get('/protected', (req, res) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-        return res.status(401).json({ message: 'Unauthorized' });
-    }
-
+app.post('/updateHR', async (req, res) => {
     try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        res.status(200).json({ message: 'Access granted', user: decoded });
+        const { email, HR } = req.body;
+
+        if (!email || HR === undefined) {
+            return res.status(400).json({ message: 'Email and HR value are required' });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        user.HR = HR;
+        await user.save();
+
+        res.status(200).json({ message: 'HR updated successfully', HR: user.HR });
     } catch (err) {
-        res.status(401).json({ message: 'Invalid or expired token' });
+        res.status(500).json({ message: 'Error updating HR', error: err.message });
     }
 });
+app.post('/updatePressure', async (req, res) => {
+    try {
+        const { email, pressure } = req.body;
+        console.log(email, pressure);
+        if (!email || pressure === undefined) {
+            return res.status(400).json({ message: 'Email and pressure value are required' });
+        }
 
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        user.pressure = pressure;
+        await user.save();
+
+        res.status(200).json({ message: 'Max contraction updated successfully', pressure: user.pressure });
+    } catch (err) {
+        res.status(500).json({ message: 'Error updating max contraction', error: err.message });
+    }
+});
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });

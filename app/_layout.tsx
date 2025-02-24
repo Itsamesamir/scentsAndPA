@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { useRouter, Slot } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BleProvider } from "./utilities/BleContext"; // Adjust the import path as needed
 
 export default function RootLayout() {
   const router = useRouter();
@@ -31,8 +32,11 @@ export default function RootLayout() {
 
   // Always render the Slot component for expo-router to function correctly
   return (
-    <View style={{ flex: 1 }}>
+   <BleProvider>
+     <View style={{ flex: 1 }}>
       <Slot />
     </View>
+   </BleProvider> 
+   
   );
 }

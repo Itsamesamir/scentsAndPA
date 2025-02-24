@@ -28,6 +28,7 @@ const Login: React.FC = () => {
 
       if (response.ok) {
         await AsyncStorage.setItem('user_token', data.token); // Save the token
+        await AsyncStorage.setItem('user_email', email); // Save the email
         router.replace('/(tabs)/(home)'); // Redirect to home or main page
       } else {
         setError(data.message || 'Error logging in');

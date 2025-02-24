@@ -27,13 +27,13 @@ export const trackAccelerometer = (start) => {
         let inRep = false;
         let startTime = 0;
 
-        console.log("Raw Y-Values:", yValues.map(p => p.y));
+        //console.log("Raw Y-Values:", yValues.map(p => p.y));
 
         for (let i = 1; i < yValues.length; i++) {
             let currentY = yValues[i].y;
             let timeDiff = startTime ? yValues[i].timestamp - startTime : 0;
 
-            console.log(`i: ${i}, Y: ${currentY}, inRep: ${inRep}, timeDiff: ${timeDiff}`);
+            //console.log(`i: ${i}, Y: ${currentY}, inRep: ${inRep}, timeDiff: ${timeDiff}`);
 
             // Detect start of a rep (top of movement)
             if (!inRep && currentY >= REP_START) {
@@ -57,7 +57,7 @@ export const trackAccelerometer = (start) => {
             }
         }
 
-        console.log(`Final Reps Counted: ${reps}, Time Under Tension per rep: ${repTUT}`);
+        //console.log(`Final Reps Counted: ${reps}, Time Under Tension per rep: ${repTUT}`);
         return { reps, timeUnderTension: repTUT };
     }
 };

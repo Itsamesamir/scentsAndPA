@@ -1,17 +1,23 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Vibration } from 'react-native';
+import React, { useState, useCallback, useContext, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Vibration } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
 import { Link } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { trackAccelerometer } from '../../sensors/accelerometer';
 import { backEndUrl } from '../../config';
+import { BleContext } from '../../utilities/BleContext';
+import { BleManager } from 'react-native-ble-plx';
+import { Buffer } from 'buffer';
+
+const manager = new BleManager();
 
 export default function RecordPage() {
   interface Exercise {
     _id: string;
     name: string;
   }
+  const { connectedDevices, setConnectedDevices } = useContext(BleContext);
 
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [selectedExercise, setSelectedExercise] = useState('Bicep Curl');
@@ -19,8 +25,19 @@ export default function RecordPage() {
   const [modalVisible, setModalVisible] = useState(false);
   const [reps, setReps] = useState(0);
   const [timeUnderTension, setTimeUnderTension] = useState<string[]>([]);
+  const [heartRates, setHeartRates] = useState<number[]>([]);
   const [countdown, setCountdown] = useState(5);
   const [isCountingDown, setIsCountingDown] = useState(false);
+
+  const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e"; // For stat commands
+  const CHARACTERISTIC_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+  const HR_SERVICE_UUID = "0000180d-0000-1000-8000-00805f9b34fb"; // Standard Heart Rate Service
+
+  // Timer refs for our message loop
+  const statOnIntervalRef = useRef<number | null>(null);
+  const statOffTimeoutRef = useRef<number | null>(null);
+  // Ref to hold the heart rate subscription so we can cancel it later.
+  const heartRateSubscription = useRef<any>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -40,6 +57,190 @@ export default function RecordPage() {
     }, [])
   );
 
+  useEffect(() => {
+    const loadConnectedDevices = async () => {
+      try {
+        console.log("🔄 Checking for already connected BLE devices...");
+        const serviceUUIDs = [
+          SERVICE_UUID,
+          HR_SERVICE_UUID,
+          "6E400000-B5A3-F393-E0A9-E50E24DCCA9E", // Custom Pressure Sensor Service
+        ];
+        const devices = await manager.connectedDevices(serviceUUIDs);
+        console.log("✅ Found connected devices:", devices);
+        const devicesWithServices = await Promise.all(
+          devices.map(async (device) => {
+            try {
+              await device.discoverAllServicesAndCharacteristics();
+              const services = await device.services();
+              // Attach serviceUUIDs directly to the device instance (all in lowercase)
+              device.serviceUUIDs = services.map((service) => service.uuid.toLowerCase());
+              console.log(`✅ Services for ${device.id}:`, device.serviceUUIDs);
+              return device;
+            } catch (error) {
+              console.error(`❌ Error fetching services for ${device.id}:`, error);
+              return null;
+            }
+          })
+        );
+        setConnectedDevices(devicesWithServices.filter(Boolean));
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("Operation was cancelled")) {
+          console.warn("Ignoring BLE Operation cancelled error.");
+          return;
+        }
+        console.error("❌ Error loading connected devices:", error);
+      }
+    };
+    loadConnectedDevices();
+  }, []);
+
+  // Send STAT ON and STAT OFF commands using the target device
+  const sendStatOn = async () => {
+    const targetDevice = connectedDevices.find((device) =>
+      device.serviceUUIDs.includes(SERVICE_UUID.toLowerCase())
+    );
+    if (!targetDevice) {
+      console.error("No device found with the required service UUID.");
+      return;
+    }
+    const message = `CHAN1:STAT ON\n`;
+    const encodedMessage = Buffer.from(message, "utf-8").toString("base64");
+    try {
+      await targetDevice.writeCharacteristicWithResponseForService(
+        SERVICE_UUID,
+        CHARACTERISTIC_UUID,
+        encodedMessage
+      );
+      console.log("STAT ON sent");
+    } catch (error) {
+      console.error("Error sending STAT ON:", error);
+    }
+  };
+
+  const sendStatOff = async () => {
+    const targetDevice = connectedDevices.find((device) =>
+      device.serviceUUIDs.includes(SERVICE_UUID.toLowerCase())
+    );
+    if (!targetDevice) {
+      console.error("No device found with the required service UUID.");
+      return;
+    }
+    const message = `CHAN1:STAT OFF\n`;
+    const encodedMessage = Buffer.from(message, "utf-8").toString("base64");
+    try {
+      await targetDevice.writeCharacteristicWithResponseForService(
+        SERVICE_UUID,
+        CHARACTERISTIC_UUID,
+        encodedMessage
+      );
+      console.log("STAT OFF sent");
+    } catch (error) {
+      console.error("Error sending STAT OFF:", error);
+    }
+  };
+
+  // Start the loop: send STAT ON immediately, schedule STAT OFF after 5 sec,
+  // then every 10 sec clear any pending STAT OFF, send STAT OFF, then STAT ON, etc.
+  const startMessageLoop = async () => {
+    await sendStatOn();
+    statOffTimeoutRef.current = setTimeout(async () => {
+      await sendStatOff();
+    }, 5000) as unknown as number;
+
+    statOnIntervalRef.current = setInterval(async () => {
+      if (statOffTimeoutRef.current !== null) {
+        clearTimeout(statOffTimeoutRef.current);
+        statOffTimeoutRef.current = null;
+        await sendStatOff();
+      }
+      await sendStatOn();
+      statOffTimeoutRef.current = setTimeout(async () => {
+        await sendStatOff();
+      }, 5000) as unknown as number;
+    }, 10000) as unknown as number;
+  };
+
+  // Stop the loop: cancel timers and send STAT OFF if needed.
+  const stopMessageLoop = async () => {
+    if (statOnIntervalRef.current !== null) {
+      clearInterval(statOnIntervalRef.current);
+      statOnIntervalRef.current = null;
+    }
+    if (statOffTimeoutRef.current !== null) {
+      clearTimeout(statOffTimeoutRef.current);
+      statOffTimeoutRef.current = null;
+      await sendStatOff();
+    }
+  };
+
+  // Start heart rate monitoring: subscribe to HR notifications and update the state array.
+  const startHeartRateMonitoring = () => {
+    // Clear previous heart rate data.
+    setHeartRates([]);
+    const targetDevice = connectedDevices.find((device) =>
+      device.serviceUUIDs.includes(HR_SERVICE_UUID.toLowerCase())
+    );
+    if (!targetDevice) {
+      console.warn("No device found with the required Heart Rate Service UUID.");
+      return;
+    }
+    heartRateSubscription.current = manager.monitorCharacteristicForDevice(
+      targetDevice.id,
+      HR_SERVICE_UUID,
+      "00002a37-0000-1000-8000-00805f9b34fb",
+      (error, characteristic) => {
+        if (error) {
+          if (error.message.includes("Operation was cancelled")) {
+            console.warn("Ignoring BLE Operation cancelled error.");
+            return;
+          }
+          console.error("Heart rate monitor error:", error);
+          return;
+        }
+        if (characteristic?.value) {
+          const newHR = decodeHeartRate(characteristic.value);
+          if (!isNaN(newHR)) {
+            console.log(`Decoded Heart Rate: ${newHR} BPM`);
+            setHeartRates(prev => [...prev, newHR]);
+          }
+        }
+      }
+    );
+  };
+
+  // Stop heart rate monitoring by removing the subscription.
+  const stopHeartRateMonitoring = () => {
+    if (heartRateSubscription.current) {
+      heartRateSubscription.current.remove();
+      heartRateSubscription.current = null;
+    }
+  };
+
+  // Decode heart rate value from Base64-encoded data.
+  const decodeHeartRate = (base64Value: string) => {
+    try {
+      const rawData = Buffer.from(base64Value, "base64");
+      if (rawData.length === 0) {
+        console.warn("Received empty heart rate data.");
+        return NaN;
+      }
+      console.log("Raw Heart Rate Data:", rawData);
+      const heartRate = rawData[0];
+      if (heartRate > 0 && heartRate < 250) {
+        return heartRate;
+      } else {
+        console.warn("Invalid heart rate received:", heartRate);
+        return NaN;
+      }
+    } catch (error) {
+      console.error("Error decoding heart rate:", error);
+      return NaN;
+    }
+  };
+
+  // Toggle recording: when starting, begin countdown, then start the message loop and heart rate monitoring;
+  // when stopping, end the message loop and heart rate monitoring and show results.
   const handleToggle = async () => {
     if (isRunning) {
       const result = await trackAccelerometer(false);
@@ -48,6 +249,8 @@ export default function RecordPage() {
         setReps(calculatedReps);
         setTimeUnderTension(calculatedTUT);
       }
+      await stopMessageLoop();
+      stopHeartRateMonitoring();
       setModalVisible(true);
       setIsRunning(false);
     } else {
@@ -58,9 +261,11 @@ export default function RecordPage() {
           if (prev <= 1) {
             clearInterval(countdownInterval);
             setIsCountingDown(false);
-            Vibration.vibrate(); // Vibrate when countdown ends
+            Vibration.vibrate();
             trackAccelerometer(true);
             setIsRunning(true);
+            startMessageLoop();
+            startHeartRateMonitoring();
           }
           return prev - 1;
         });
@@ -76,7 +281,6 @@ export default function RecordPage() {
         </TouchableOpacity>
       </Link>
       <Text style={styles.title}>Record</Text>
-
       {isCountingDown ? (
         <Text style={styles.countdownText}>{countdown}</Text>
       ) : (
@@ -84,7 +288,6 @@ export default function RecordPage() {
           <Text style={styles.startButtonText}>{isRunning ? 'Stop' : 'Start'}</Text>
         </TouchableOpacity>
       )}
-
       <Text style={styles.label}>Exercise</Text>
       <View style={styles.dropdownContainer}>
         <Picker
@@ -97,14 +300,18 @@ export default function RecordPage() {
           ))}
         </Picker>
       </View>
-
       <Modal visible={modalVisible} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Reps: {reps}</Text>
             {timeUnderTension.map((tut, index) => (
-              <Text key={index} style={styles.modalTitle}>Rep {index + 1}: {tut} sec</Text>
+              <Text key={index} style={styles.modalTitle}>
+                Rep {index + 1}: {tut} sec
+              </Text>
             ))}
+            <Text style={styles.modalTitle}>
+              Heart Rate Readings: {heartRates.join(', ')}
+            </Text>
             <TouchableOpacity
               style={styles.submitButton}
               onPress={() => setModalVisible(false)}
