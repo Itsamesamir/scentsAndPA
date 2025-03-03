@@ -144,7 +144,12 @@ export default function SensorDataScreen() {
           const decodedValue = decodeHeartRate(characteristic.value);
           if (!isNaN(decodedValue)) {
             console.log(`Decoded Heart Rate: ${decodedValue} BPM`);
-            heartRates.push(decodedValue);
+            if (decodedValue > 40 && decodedValue < 250) {
+              heartRates.push(decodedValue);
+            } else {
+              console.warn("Ignoring degenerate heart rate value:", decodedValue);
+            }
+           // heartRates.push(decodedValue);
           }
         }
       }

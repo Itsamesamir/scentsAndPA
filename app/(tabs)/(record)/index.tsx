@@ -4,28 +4,30 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
 import { Link } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { trackAccelerometer } from '../../sensors/accelerometer';
-import { backEndUrl } from '../../config';
 import { BleContext } from '../../utilities/BleContext';
 import { BleManager } from 'react-native-ble-plx';
 import { Buffer } from 'buffer';
+import { useAccelerometerTracker } from '../../sensors/accelerometer';
+import { backEndUrl } from '../../config';
 
 const manager = new BleManager();
 
 export default function RecordPage() {
-  interface Exercise {
-    _id: string;
-    name: string;
-  }
+  // Define Exercise interface if using TypeScript; otherwise, this is for clarity.
+  // interface Exercise {
+  //   _id: string;
+  //   name: string;
+  // }
+
   const { connectedDevices, setConnectedDevices } = useContext(BleContext);
 
-  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [exercises, setExercises] = useState([]);
   const [selectedExercise, setSelectedExercise] = useState('Bicep Curl');
   const [isRunning, setIsRunning] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [reps, setReps] = useState(0);
-  const [timeUnderTension, setTimeUnderTension] = useState<string[]>([]);
-  const [heartRates, setHeartRates] = useState<number[]>([]);
+  const [timeUnderTension, setTimeUnderTension] = useState([]);
+  const [heartRates, setHeartRates] = useState([]);
   const [countdown, setCountdown] = useState(5);
   const [isCountingDown, setIsCountingDown] = useState(false);
 
@@ -34,10 +36,14 @@ export default function RecordPage() {
   const HR_SERVICE_UUID = "0000180d-0000-1000-8000-00805f9b34fb"; // Standard Heart Rate Service
 
   // Timer refs for our message loop
-  const statOnIntervalRef = useRef<number | null>(null);
-  const statOffTimeoutRef = useRef<number | null>(null);
+  const statOnIntervalRef = useRef(null);
+  const statOffTimeoutRef = useRef(null);
   // Ref to hold the heart rate subscription so we can cancel it later.
-  const heartRateSubscription = useRef<any>(null);
+  const heartRateSubscription = useRef(null);
+
+  // Use the custom accelerometer tracker hook.
+  // When isRunning is true, tracking is active.
+  const repData = useAccelerometerTracker(isRunning);
 
   useFocusEffect(
     useCallback(() => {
@@ -146,7 +152,7 @@ export default function RecordPage() {
     await sendStatOn();
     statOffTimeoutRef.current = setTimeout(async () => {
       await sendStatOff();
-    }, 5000) as unknown as number;
+    }, 5000);
 
     statOnIntervalRef.current = setInterval(async () => {
       if (statOffTimeoutRef.current !== null) {
@@ -157,8 +163,8 @@ export default function RecordPage() {
       await sendStatOn();
       statOffTimeoutRef.current = setTimeout(async () => {
         await sendStatOff();
-      }, 5000) as unknown as number;
-    }, 10000) as unknown as number;
+      }, 5000);
+    }, 10000);
   };
 
   // Stop the loop: cancel timers and send STAT OFF if needed.
@@ -199,10 +205,10 @@ export default function RecordPage() {
           return;
         }
         if (characteristic?.value) {
-          const newHR = decodeHeartRate(characteristic.value);
-          if (!isNaN(newHR)) {
-            console.log(`Decoded Heart Rate: ${newHR} BPM`);
-            setHeartRates(prev => [...prev, newHR]);
+          const decodedValue = decodeHeartRate(characteristic.value);
+          if (!isNaN(decodedValue)) {
+            console.log(`Decoded Heart Rate: ${decodedValue} BPM`);
+            setHeartRates(prev => [...prev, decodedValue]);
           }
         }
       }
@@ -218,7 +224,7 @@ export default function RecordPage() {
   };
 
   // Decode heart rate value from Base64-encoded data.
-  const decodeHeartRate = (base64Value: string) => {
+  const decodeHeartRate = (base64Value) => {
     try {
       const rawData = Buffer.from(base64Value, "base64");
       if (rawData.length === 0) {
@@ -243,16 +249,15 @@ export default function RecordPage() {
   // when stopping, end the message loop and heart rate monitoring and show results.
   const handleToggle = async () => {
     if (isRunning) {
-      const result = await trackAccelerometer(false);
-      if (result) {
-        const { reps: calculatedReps, timeUnderTension: calculatedTUT } = result;
-        setReps(calculatedReps);
-        setTimeUnderTension(calculatedTUT);
-      }
-      await stopMessageLoop();
-      stopHeartRateMonitoring();
-      setModalVisible(true);
+      // Stop tracking by setting isRunning to false. The custom hook will clean up.
       setIsRunning(false);
+      console.log("Final rep data:", repData);
+      setReps(repData.length);
+      setTimeUnderTension(repData.map(rep => rep.tut));
+      //await stopMessageLoop();
+      //stopHeartRateMonitoring();
+      //setModalVisible(true);
+      //setIsRunning(false);
     } else {
       setIsCountingDown(true);
       setCountdown(5);
@@ -262,10 +267,9 @@ export default function RecordPage() {
             clearInterval(countdownInterval);
             setIsCountingDown(false);
             Vibration.vibrate();
-            trackAccelerometer(true);
             setIsRunning(true);
-            startMessageLoop();
-            startHeartRateMonitoring();
+            //startMessageLoop();
+            //startHeartRateMonitoring();
           }
           return prev - 1;
         });

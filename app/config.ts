@@ -1,4 +1,4 @@
-export const backEndUrl = 'http://10.97.245.155:3000';
+export const backEndUrl = 'http://192.168.1.169:3000';
 
 export default {
     backEndUrl
