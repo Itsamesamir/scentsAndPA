@@ -48,3 +48,24 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+
+
+## Analysis
+
+
+
+ key performance metrics from exercise recordings and user baseline data extraction:
+
+- **Normalized Maximum Muscle Contraction:** For each repetition, the maximum pressure is normalized to the user’s baseline pressure (from the users file) and then averaged.
+- **Average Time Under Tension (TUT):** The average contraction duration per repetition.
+- **Heart Rate Recovery:** Difference between the average heart rate during exercise and after exercise.
+
+This analysis compares paired measurements for the same individuals under peppermint and control conditions using a suite of methods and visualizations that include:
+
+- **Paired Data Visualization:** Paired line plots, density plots of differences, and Bland–Altman plots.
+- **Statistical Testing:** Paired t–test, Wilcoxon signed–rank test, effect size (Cohen’s d), and bootstrap confidence intervals.
+- **Multivariate Analysis:** MANOVA on the vector of differences across performance metrics.
+
+This notebook is intended to provide a high–level statistical assessment of RQ1.
+$$\sqrt{3x-1}+(1+x)^2$$

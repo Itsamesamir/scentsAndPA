@@ -14,7 +14,6 @@ app.use(express.json());
 
 // MongoDB Connection
 const uri = "mongodb+srv://ahamedsamirsarker:Itsameass18022003vidhlo@cluster0.qommg.mongodb.net/ScentAndPA?retryWrites=true&w=majority&appName=Cluster0";
-
 mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log('MongoDB connected'))
     .catch(err => console.error('MongoDB connection error:', err));
@@ -144,6 +143,60 @@ app.post('/updatePressure', async (req, res) => {
         res.status(500).json({ message: 'Error updating max contraction', error: err.message });
     }
 });
+
+// New ExerciseRecording Schema
+const ExerciseRecordingSchema = new mongoose.Schema({
+    userEmail: { type: String, required: true },
+    exerciseName: { type: String, required: true },
+    channel: { type: String, required: true },
+    // Array of objects, e.g. { time: <timestamp>, hr: <value> }
+    hrDuringRecording: { type: Array, default: [] },
+    // Array of objects, e.g. { time: <timestamp>, hr: <value> }
+    hrPostRecording: { type: Array, default: [] },
+    // Accelerometer data can be stored as an array (each entry structure based on your front-end format)
+    accelerometerData: { type: Array, default: [] },
+    recordedAt: { type: Date, default: Date.now }
+});
+
+const ExerciseRecording = mongoose.model('ExerciseRecording', ExerciseRecordingSchema);
+
+// Express route to save recording data from the front end
+app.post('/saveRecording', async (req, res) => {
+    try {
+        const {
+            userEmail,
+            exerciseName,
+            channel,
+            hrDuringRecording,
+            hrPostRecording,
+            accelerometerData
+        } = req.body;
+
+        // Validate required fields
+        if (!userEmail || !exerciseName || !channel) {
+            return res.status(400).json({
+                message: 'Missing required fields: userEmail, exerciseName, or channel.'
+            });
+        }
+
+        const newRecording = new ExerciseRecording({
+            userEmail,
+            exerciseName,
+            channel,
+            hrDuringRecording,
+            hrPostRecording,
+            accelerometerData
+        });
+
+        await newRecording.save();
+        res.status(201).json({ message: 'Recording saved successfully.' });
+    } catch (err) {
+        console.error('Error saving recording:', err);
+        res.status(500).json({ message: 'Error saving recording', error: err.message });
+    }
+});
+
+
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
