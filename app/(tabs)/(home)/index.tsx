@@ -11,43 +11,6 @@ export default function HomeScreen() {
   const screenWidth = Dimensions.get('window').width;
   const router = useRouter();
 
-  const handleLogout = async () => {
-    try {
-      await AsyncStorage.removeItem('user_token'); // Clear the token
-      console.log('User logged out.');
-      router.replace('/(auth)/login'); // Redirect to the login screen
-    } catch (error) {
-      console.error('Error logging out:', error);
-    }
-  };
-  const chartConfig = {
-    backgroundColor: '#ffffff', // White background
-    backgroundGradientFrom: '#ffffff',
-    backgroundGradientTo: '#ffffff',
-    decimalPlaces: 2, // Decimal places for data points
-    color: (opacity = 1) => `rgba(94, 74, 142, ${opacity})`, // Purple axes and lines
-    labelColor: (opacity = 1) => `rgba(94, 74, 142, ${opacity})`, // Purple labels
-    style: {
-      borderRadius: 16,
-    },
-    propsForDots: {
-      r: '6',
-      strokeWidth: '2',
-      stroke: '#5e4a8e', // Purple stroke around dots
-    },
-    propsForBackgroundLines: {
-      stroke: '#e3d6f5', // Light purple gridlines
-    },
-  };
-
-  const data = {
-    labels: ['0s', '10s', '20s', '30s', '40s', '50s'],
-    datasets: [
-      {
-        data: [60, 70, 80, 90, 95, 100],
-      },
-    ],
-  };
 
  return (
     <SafeAreaView style={styles.container}>
@@ -67,35 +30,11 @@ export default function HomeScreen() {
 
     
       </View>
-      <View style={styles.titleContainer}>
+     <View style={styles.titleContainer}>
         <Text style={styles.title}>ScentsAndPA</Text>
+        <Text style={styles.welcome}>Welcome back!</Text>
       </View>
-      <ScrollView style={styles.scrollView}>
-        <Text style={styles.chartTitle}>Bicep Curls Peppermint</Text>
-        <LineChart
-          data={data}
-          width={screenWidth - 20}
-          height={220}
-          chartConfig={chartConfig}
-          style={styles.chart}
-        />
-        <Text style={styles.chartTitle}>Bicep Curls Lavender</Text>
-        <LineChart
-          data={data}
-          width={screenWidth - 20}
-          height={220}
-          chartConfig={chartConfig}
-          style={styles.chart}
-        />
-        <Text style={styles.chartTitle}>Bicep Curls Citrus</Text>
-        <LineChart
-          data={data}
-          width={screenWidth - 20}
-          height={220}
-          chartConfig={chartConfig}
-          style={styles.chart}
-        />
-      </ScrollView>
+      
     </SafeAreaView>
   );
 }
@@ -123,18 +62,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-   titleContainer: {
-    flexDirection: 'row',
+  titleContainer: {
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginBottom: 20,
+  },
+  mainContent: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#5e4a8e', // Purple color
-    marginBottom: 40,
-    
-   
-   
+    color: '#5e4a8e',
+  },
+  welcome: {
+    fontSize: 18,
+    color: '#555',
+    marginTop: 8,
   },
  
   scrollView: {

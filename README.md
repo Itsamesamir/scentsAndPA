@@ -1,16 +1,62 @@
-# Welcome to your Expo app 👋
+# Project Information
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This document presents **ScentsAndPA**, the mobile application and hardware‐in‐the‐loop system developed as the core deliverable of the author’s graduate thesis. The ScentsAndPA project **constitutes** the thesis: it rigorously examines the influence of precisely synchronized olfactory stimuli on exercise performance, physiological response, and user experience.
 
-## Get started
+**Research Objectives:**
 
-1. Install dependencies
+- Quantify the effect of controlled scent delivery on muscle contraction strength and heart‐rate recovery.
+- Provide a turnkey platform for real‐time biofeedback acquisition (MAX30102 heart‐rate, FSR pressure, device IMU).
+- Enable fully customizable exercise sessions with integrated scent protocols.
+- Supply a comprehensive analysis toolkit for paired‐data statistics, effect‐size estimation, and reproducibility.
+
+**System Architecture & Components:**
+
+| Layer                   | Technology / Hardware                          |
+|-------------------------|------------------------------------------------|
+| **Mobile Application**  | React Native & Expo (TypeScript)               |
+| **Backend & Database**  | Node.js, Express, MongoDB (Mongoose)           |
+| **BLE Microcontrollers**| ESP32 (Arduino IDE sketches)                   |
+| **Sensors**             | MAX30102 (heart rate), FSR (pressure), IMU     |
+| **Scent Delivery Unit** | OWidgets programmable olfactometer             |
+
+---
+
+## User Manual
+
+1. **Download & Install APK**  
+   Obtain the latest `.apk` from [here](https://drive.google.com/file/d/1XjzZfPCCDvxQ0wmsWfh0WzEw0pDuMxwu/view?usp=sharing).
+   _Note: Android 11 or later is required. iOS binaries require an Xcode license and are built separately._
+
+2. **Install Expo CLI**  
 
    ```bash
-   npm install
-   ```
+   npm install --global expo-cli
 
-2. Start the app
+3. **Clone Repository & Install Dependencies**  
+
+     ```bash
+   git clone https://github.com/your-org/ScentsAndPA.git
+
+cd ScentsAndPA
+npm install
+
+3. **Configure Backend Connection**  
+
+     ```bash
+   # Edit the configuration file
+   code app/config.ts
+
+In config.ts, set the backEndUrl constant to the IP address of the server machine (obtain via ipconfig on Windows or ifconfig on macOS/Linux).
+
+4. **Launch Backend Server**
+
+   ```bash
+      cd backend
+      node server.js
+
+The API will listen on port 3000 by default.
+
+5. **Start the app**
 
    ```bash
     npx expo start
@@ -23,49 +69,38 @@ In the output, you'll find options to open the app in a
 - [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
 - [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+To use the application with all the intended functionalities use the development build.
 
-## Get a fresh project
+5. **Hardware Setup**
 
-When you're ready, run:
+- Connect **ESP32 #1** to the **MAX30102** sensor via I²C for heart-rate measurement.  
+- Connect **ESP32 #2** to the **FSR** sensor via analog input for muscle-pressure measurement.  
+- Power each ESP32 from a USB power source.  
+- Position the scent-delivery unit approximately 1 m from the user’s face and select the desired scent channel in the application.  
 
-```bash
-npm run reset-project
-```
+6. **Operating Procedure**
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
-
-
+- Log in or register using the **Profile** screen.  
+- Pair both ESP32 modules and the scent-delivery unit via BLE.  
+- Enter baseline heart rate and maximum contraction pressure in **Profile**.  
+- In **Exercises**, select “Bicep Curls” (or define a custom exercise), then choose a scent protocol.  
+- Tap **Start** → 5 s countdown → haptic cue → commence exercise.  
+  - Scents are delivered in 5 s pulses every 10 s.  
+  - A 4 min post-exercise recording captures recovery metrics.  
+- Tap **Stop** to save the session and review real-time charts.  
 
 ## Analysis
 
+   The Analysis files are found under the analysis directory.
 
+ Key performance metrics from exercise recordings and user baseline data extraction:
 
- key performance metrics from exercise recordings and user baseline data extraction:
-
-- **Normalized Maximum Muscle Contraction:** For each repetition, the maximum pressure is normalized to the user’s baseline pressure (from the users file) and then averaged.
+- **Normalised Maximum Muscle Contraction:** For each repetition, the maximum pressure is normalized to the user’s baseline pressure (from the users file) and then averaged.
 - **Average Time Under Tension (TUT):** The average contraction duration per repetition.
 - **Heart Rate Recovery:** Difference between the average heart rate during exercise and after exercise.
 
-This analysis compares paired measurements for the same individuals under peppermint and control conditions using a suite of methods and visualizations that include:
+This analysis compares paired measurements for the same individuals under different scents and control conditions using a suite of methods and visualizations that include:
 
-- **Paired Data Visualization:** Paired line plots, density plots of differences, and Bland–Altman plots.
+- **Paired Data Visualisation:** Paired line plots, density plots of differences, and Bland–Altman plots.
 - **Statistical Testing:** Paired t–test, Wilcoxon signed–rank test, effect size (Cohen’s d), and bootstrap confidence intervals.
 - **Multivariate Analysis:** MANOVA on the vector of differences across performance metrics.
-
-This notebook is intended to provide a high–level statistical assessment of RQ1.
-$$\sqrt{3x-1}+(1+x)^2$$

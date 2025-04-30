@@ -195,6 +195,47 @@ app.post('/saveRecording', async (req, res) => {
         res.status(500).json({ message: 'Error saving recording', error: err.message });
     }
 });
+app.post('/getData', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
+
+        const recordings = await ExerciseRecording.find({ userEmail: email });
+
+        if (!recordings || recordings.length === 0) {
+            return res.status(404).json({ message: 'No recordings found for this user' });
+        }
+
+        res.status(200).json({ recordings });
+    } catch (err) {
+        console.error('Error retrieving data:', err);
+        res.status(500).json({ message: 'Error retrieving data', error: err.message });
+    }
+});
+app.post('/getBasePressure', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
+
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json({ pressure: user.pressure });
+    } catch (err) {
+        console.error('Error retrieving base pressure:', err);
+        res.status(500).json({ message: 'Error retrieving pressure', error: err.message });
+    }
+});
+
 
 
 app.listen(port, () => {
