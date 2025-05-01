@@ -37,7 +37,7 @@
 
 3. **Clone Repository & Install Dependencies**  
      ```bash
-   git clone https://github.com/your-org/ScentsAndPA.git
+   git clone https://github.com/Itsamesamir/scentsAndPA.git
    cd ScentsAndPA
    npm install
 
