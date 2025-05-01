@@ -49,6 +49,7 @@ In config.ts, set the backEndUrl constant to the IP address of the server machin
 
 
 4. **Launch Backend Server**
+  Request password to the database from the developer, alternatively create a new mongodb database and add collections as shown in backend/server.js
    ```bash
       cd backend
       node server.js
