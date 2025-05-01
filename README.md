@@ -1,9 +1,8 @@
 # Project Information
 
-This document presents **ScentsAndPA**, the mobile application and hardware‐in‐the‐loop system developed as the core deliverable of the author’s graduate thesis. The ScentsAndPA project **constitutes** the thesis: it rigorously examines the influence of precisely synchronized olfactory stimuli on exercise performance, physiological response, and user experience.
+**ScentsAndPA** is an integrated mobile application and hardware-in-the-loop platform that I developed as the core deliverable of my undergraduate thesis. This system embodies my thesis research, providing a rigorously designed framework to evaluate how precisely timed olfactory cues affect exercise performance, physiological responses, and overall user experience.
 
 **Research Objectives:**
-
 - Quantify the effect of controlled scent delivery on muscle contraction strength and heart‐rate recovery.
 - Provide a turnkey platform for real‐time biofeedback acquisition (MAX30102 heart‐rate, FSR pressure, device IMU).
 - Enable fully customizable exercise sessions with integrated scent protocols.
@@ -22,34 +21,34 @@ This document presents **ScentsAndPA**, the mobile application and hardware‐in
 ---
 
 ## User Manual
+### Prerequisites
 
+- Android 11+ device (or Android emulator)  
+- Node.js & npm  
+- Expo CLI (`npm install --global expo-cli`)  
+- Git
 1. **Download & Install APK**  
-   Obtain the latest `.apk` from [here](https://drive.google.com/file/d/1XjzZfPCCDvxQ0wmsWfh0WzEw0pDuMxwu/view?usp=sharing).
+   Obtain the latest `.apk` from the project’s GitHub Releases page.  
    _Note: Android 11 or later is required. iOS binaries require an Xcode license and are built separately._
 
 2. **Install Expo CLI**  
-
    ```bash
    npm install --global expo-cli
 
 3. **Clone Repository & Install Dependencies**  
-
      ```bash
-   git clone https://github.com/Itsamesamir/scentsAndPA.git
-
-cd ScentsAndPA
-npm install
+   git clone https://github.com/your-org/ScentsAndPA.git
+   cd ScentsAndPA
+   npm install
 
 3. **Configure Backend Connection**  
-
      ```bash
    # Edit the configuration file
    code app/config.ts
-
 In config.ts, set the backEndUrl constant to the IP address of the server machine (obtain via ipconfig on Windows or ifconfig on macOS/Linux).
 
-4. **Launch Backend Server**
 
+4. **Launch Backend Server**
    ```bash
       cd backend
       node server.js
@@ -80,19 +79,19 @@ To use the application with all the intended functionalities use the development
 
 6. **Operating Procedure**
 
-- Log in or register using the **Profile** screen.  
+ - Log in or register using the **Profile** screen.  
 - Pair both ESP32 modules and the scent-delivery unit via BLE.  
 - Enter baseline heart rate and maximum contraction pressure in **Profile**.  
 - In **Exercises**, select “Bicep Curls” (or define a custom exercise), then choose a scent protocol.  
 - Tap **Start** → 5 s countdown → haptic cue → commence exercise.  
-  - Scents are delivered in 5 s pulses every 10 s.  
-  - A 4 min post-exercise recording captures recovery metrics.  
+   - Scents are delivered in 5 s pulses every 10 s.  
+   - A 4 min post-exercise recording captures recovery metrics.  
 - Tap **Stop** to save the session and review real-time charts.  
 
 ## Analysis
+   The Analysis files are found under the analysis directory. 
 
-   The Analysis files are found under the analysis directory.
-
+ 
  Key performance metrics from exercise recordings and user baseline data extraction:
 
 - **Normalised Maximum Muscle Contraction:** For each repetition, the maximum pressure is normalized to the user’s baseline pressure (from the users file) and then averaged.
