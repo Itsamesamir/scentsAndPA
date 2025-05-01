@@ -7,13 +7,16 @@ const cors = require('cors');
 
 const app = express();
 const port = 3000;
-const JWT_SECRET = 'key'; // Use a secure secret in production!
+
 
 app.use(cors());
 app.use(express.json());
+require('dotenv').config();
+
+const MONGO_PWD = process.env.PASSWORD;
 
 // MongoDB Connection
-const uri = "mongodb+srv://ahamedsamirsarker:Itsameass18022003vidhlo@cluster0.qommg.mongodb.net/ScentAndPA?retryWrites=true&w=majority&appName=Cluster0";
+const uri = `mongodb+srv://ahamedsamirsarker:${MONGO_PWD}@cluster0.qommg.mongodb.net/ScentAndPA?retryWrites=true&w=majority&appName=Cluster0`;
 mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log('MongoDB connected'))
     .catch(err => console.error('MongoDB connection error:', err));
