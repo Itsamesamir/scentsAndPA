@@ -46,7 +46,7 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Initializing BLE for Device 1 (Heart Rate Sensor)...");
 
-  // Initialize BLE with a unique name
+  // Initialise BLE with a unique name
   BLEDevice::init("ESP32 Sensor Monitor 1");
   pServer = BLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
@@ -72,11 +72,11 @@ void setup() {
   pAdvertising->start();
   Serial.println("BLE Advertising started for Device 1...");
 
-  // Initialize the MAX30105 sensor
+  // Initialise the MAX30105 sensor
   if (!particleSensor.begin(Wire, I2C_SPEED_STANDARD)) {
     Serial.println("MAX30105 not found. Using simulated heart rate values.");
   } else {
-    Serial.println("MAX30105 initialized.");
+    Serial.println("MAX30105 Initialised.");
     particleSensor.setup();
     particleSensor.setPulseAmplitudeRed(0x0A);
     particleSensor.setPulseAmplitudeIR(0x0A);  

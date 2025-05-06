@@ -29,9 +29,9 @@ class MyServerCallbacks : public BLEServerCallbacks {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("Initializing BLE for Device 2 (Force Sensor)...");
+  Serial.println("Initialising BLE for Device 2 (Force Sensor)...");
 
-  // Initialize BLE with a unique name
+  // Initialise BLE with a unique name
   BLEDevice::init("ESP32 Sensor Monitor 2");
   pServer = BLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
